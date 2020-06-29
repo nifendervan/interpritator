@@ -32,37 +32,23 @@ Closure& ClassInstance::Fields() {
 }
 
 ClassInstance::ClassInstance(const Class& cls) : cls(cls) {
-//	fields["self"] = ObjectHolder::Share(*this);
+
 }
 
 ObjectHolder ClassInstance::Call(const std::string& method, const std::vector<ObjectHolder>& actual_args) {
-//	cout << "class: " << cls.GetName() << endl;
-//	cout << "method: " << method << endl;
-//	cout << "ptr: " << this << endl;
-	const Method* mtd = cls.GetMethod(method);
+  try {
+  	const Method* mtd = cls.GetMethod(method);
+    Closure closure = {{"self", ObjectHolder::Share(*this)}};
 
-	Closure closure;
-	closure["self"] = ObjectHolder::Share(*this);
+    for (size_t i = 0; i < actual_args.size(); ++i) {
+      closure[mtd->formal_params[i]] = actual_args[i];
+    }
 
-	for (size_t i = 0; i < mtd->formal_params.size(); ++i) {
-		closure[mtd->formal_params[i]] = actual_args[i];
-	}
-
-//	if (method == "__init__") {
-//		stack<const Method*> methods;
-//		for (const Class* current = &cls; current; current = current->GetParent()) {
-//			if (const Method* method = current->GetMethod("__init__")) {
-//				methods.push(method);
-//			}
-//		}
-//		while (!methods.empty()) {
-//			methods.top()->body->Execute(fields);
-//			methods.pop();
-//		}
-//		return ObjectHolder::None();
-//	} else {
-		return mtd->body->Execute(closure);
-//	}
+    return mtd->body->Execute(closure);
+  } catch (ObjectHolder& returned_value) {
+    return returned_value;
+  }
+  return ObjectHolder::None();
 }
 
 Class::Class(std::string name, std::vector<Method> methods_, const Class* parent)
