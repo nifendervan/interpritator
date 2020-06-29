@@ -259,7 +259,7 @@ void TestReturnScope() {
 	const string program = R"(
 class Adder:
   def add(arg):
-    return arg + 1
+    return arg+1
 
 adder = Adder()
 x = 0
@@ -278,6 +278,228 @@ print x
   ASSERT_EQUAL(os.str(), "1\n");
 }
 
+
+void TestInheritance() {
+  const string program = R"(
+class Greeting:
+  def greet():
+    return "Hello, " + self.name()
+
+  def name():
+    return 'Noname'
+
+class HelloJohn(Greeting):
+  def name():
+    return 'John'
+
+greet_john = HelloJohn()
+print greet_john.greet()    
+  )";
+  ostringstream os;
+  Ast::Print::SetOutputStream(os);
+
+  Runtime::Closure closure;
+  auto tree = ParseProgramFromString(program);
+  tree->Execute(closure);
+
+  ASSERT_EQUAL(os.str(), "Hello, John\n");
+}
+
+void TestInheritance2() {
+  const string program = R"(
+class Shape:
+  def __str__():
+    return "Shape"
+
+  def area():
+    return 'Not implemented'
+
+class Rect(Shape):
+  def __init__(w, h):
+    self.w = w
+    self.h = h
+
+  def __str__():
+    return "Rect(" + str(self.w) + 'x' + str(self.h) + ')'
+
+  def area():
+    return self.w * self.h
+
+s = Shape()
+r = Rect(2, 10)
+print s.area(), r.area() 
+  )";
+  ostringstream os;
+  Ast::Print::SetOutputStream(os);
+
+  Runtime::Closure closure;
+  auto tree = ParseProgramFromString(program);
+  tree->Execute(closure);
+
+  ASSERT_EQUAL(os.str(), "Not implemented 20\n");
+}
+
+void TestInheritance3() {
+  const string program = R"(
+class BypassOperation:
+  def get_coefficient():
+    return 1
+
+  def do_operation(arg):
+    return arg
+
+  def __str__():
+    return "Base"
+
+class AddOperation(BypassOperation):
+  def get_coefficient():
+    return 0
+  
+  def do_operation(arg):
+    return arg+self.get_coefficient()
+
+  def __str__():
+    return "Add"
+
+class Add5Operation(AddOperation):
+  def get_coefficient():
+    return 5
+
+  def __str__():
+    return "Add 5"
+
+class DivideOperation(BypassOperation):
+  def do_operation(arg):
+    return arg/self.get_coefficient()
+
+  def __str__():
+    return "Divide"
+
+class Divide2Operation(DivideOperation):
+  def get_coefficient():
+    return 2
+
+  def __str__():
+    return "Divide 2"
+
+class Divide10Operation(Divide2Operation):
+  def get_coefficient():
+    return 10
+
+  def __str__():
+    return "Divide 10"
+
+d = Divide10Operation()
+a = Add5Operation()
+
+print d, d.do_operation(100), a, a.do_operation(5)
+  )";
+  ostringstream os;
+  Ast::Print::SetOutputStream(os);
+
+  Runtime::Closure closure;
+  auto tree = ParseProgramFromString(program);
+  tree->Execute(closure);
+
+  ASSERT_EQUAL(os.str(), "Divide 10 10 Add 5 10\n");
+}
+
+void TestInheritance4() {
+  const string program = R"(
+class BypassOperation:
+  def __str__():
+    return "Bypass/base operation interface class"
+
+  def get_coefficient():
+    return 1
+
+  def do_operation(argument):
+    return argument
+
+
+class DivideOperation(BypassOperation):
+  def __str__():
+    return "Divide operation"
+
+  def do_operation(argument):
+    return argument / self.get_coefficient()
+
+class Divide2Operation(DivideOperation):
+  def __str__():
+    return "Divide on 2 operation"
+
+  def get_coefficient():
+    return 2
+
+class Divide10Operation(Divide2Operation):
+  def __str__():
+    return "Divide on 10 operation"
+
+  def get_coefficient():
+    return 10
+
+
+class AddOperation(BypassOperation):
+  def __str__():
+    return "Add operation"
+
+  def get_coefficient():
+    return 0
+
+  def do_operation(argument):
+    return argument + self.get_coefficient()
+
+class Add5Operation(AddOperation):
+  def __str__():
+    return "Add 5 operation"
+
+  def get_coefficient():
+    return 5
+
+class Add100Operation(AddOperation):
+  def __str__():
+    return "Add 100 operation"
+
+  def get_coefficient():
+    return 100
+
+operation1 = Divide2Operation()
+operation2 = Divide10Operation()
+operation3 = Add5Operation()
+operation4 = Add100Operation()
+
+x = 100
+
+x = operation1.do_operation(x)
+x = operation2.do_operation(x)
+x = operation4.do_operation(x)
+x = operation3.do_operation(x)
+x = operation3.do_operation(x)
+x = operation3.do_operation(x)
+x = operation2.do_operation(x)
+x = operation1.do_operation(x)
+
+print operation1
+print operation2
+print operation3
+print operation4
+print x
+  )";
+  ostringstream os;
+  Ast::Print::SetOutputStream(os);
+
+  Runtime::Closure closure;
+  auto tree = ParseProgramFromString(program);
+  tree->Execute(closure);
+
+  ASSERT_EQUAL(os.str(), R"(Divide on 2 operation
+Divide on 10 operation
+Add 5 operation
+Add 100 operation
+6
+)");
+}
+
 }
 
 void TestParseProgram(TestRunner& tr) {
@@ -290,4 +512,8 @@ void TestParseProgram(TestRunner& tr) {
   RUN_TEST(tr, Parse::TestComplexLogicalExpression);
   RUN_TEST(tr, Parse::TestClassicalPolymorphism);
   RUN_TEST(tr, Parse::TestReturnScope);
+  RUN_TEST(tr, Parse::TestInheritance);
+  RUN_TEST(tr, Parse::TestInheritance2);
+  RUN_TEST(tr, Parse::TestInheritance3);
+  RUN_TEST(tr, Parse::TestInheritance4);
 }

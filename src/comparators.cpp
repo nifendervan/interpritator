@@ -17,6 +17,9 @@ bool Equal(ObjectHolder lhs, ObjectHolder rhs) {
 	if (lhs.TryAs<String>()) {
 		return lhs.TryAs<String>()->GetValue() == rhs.TryAs<String>()->GetValue();
 	}
+	if (lhs.TryAs<Bool>()) {
+		return lhs.TryAs<Bool>()->GetValue() == rhs.TryAs<Bool>()->GetValue();
+	}
 	return false;
 }
 
@@ -26,6 +29,9 @@ bool Less(ObjectHolder lhs, ObjectHolder rhs) {
 	}
 	if (lhs.TryAs<String>()) {
 		return lhs.TryAs<String>()->GetValue() < rhs.TryAs<String>()->GetValue();
+	}
+	if (lhs.TryAs<Bool>()) {
+		return lhs.TryAs<Bool>()->GetValue() < rhs.TryAs<Bool>()->GetValue();
 	}
 	return false;
 }

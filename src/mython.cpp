@@ -116,6 +116,96 @@ print y.value
   ASSERT_EQUAL(output.str(), "2\n3\n");
 }
 
+void TestInheritance() {
+  istringstream input(R"(
+class Shape:
+  def __str__():
+    return "Shape"
+
+  def area():
+    return 'Not implemented'
+
+class Rect(Shape):
+  def __init__(w, h):
+    self.w = w
+    self.h = h
+
+  def __str__():
+    return "Rect(" + str(self.w) + 'x' + str(self.h) + ')'
+
+  def area():
+    return self.w * self.h
+
+x = Shape()
+print x, x.area()
+
+x = Rect(1, 2)
+print x, x.area()
+)");
+
+  ostringstream output;
+  RunMythonProgram(input, output);
+
+  ASSERT_EQUAL(output.str(), "Shape Not implemented\nRect(1x2) 2\n");
+}
+
+void TestReturn() {
+  istringstream input(R"(
+class Counter:
+  def __init__():
+    self.value = 0
+
+  def add():
+    self.value = self.value + 1
+    return True
+
+x = Counter()
+y = x.add()
+if y:
+  x.add()
+
+print x.value
+)");
+
+  ostringstream output;
+  RunMythonProgram(input, output);
+
+  ASSERT_EQUAL(output.str(), "2\n");
+}
+
+void TestFildAssignment() {
+  istringstream input(R"(
+class Base:
+  def set(x):
+    self.x = x
+  def get(x):
+    return self.x
+	
+x = Base()
+x.set(1)
+x.get(2)
+
+print x.get(3), x.x
+)");
+
+  ostringstream output;
+  RunMythonProgram(input, output);
+
+  ASSERT_EQUAL(output.str(), "1 1\n");
+}
+
+void TestComparison() {
+  istringstream input(R"(
+if True == True:
+  print True
+)");
+
+  ostringstream output;
+  RunMythonProgram(input, output);
+
+  ASSERT_EQUAL(output.str(), "True\n");
+}
+
 void TestAll() {
   TestRunner tr;
   Runtime::RunObjectHolderTests(tr);
@@ -128,4 +218,8 @@ void TestAll() {
   RUN_TEST(tr, TestAssignments);
   RUN_TEST(tr, TestArithmetics);
   RUN_TEST(tr, TestVariablesArePointers);
+  RUN_TEST(tr, TestInheritance);
+  RUN_TEST(tr, TestReturn);
+  RUN_TEST(tr, TestFildAssignment);
+  RUN_TEST(tr, TestComparison);
 }

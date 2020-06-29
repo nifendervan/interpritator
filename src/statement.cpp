@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <stack>
 
 using namespace std;
 
@@ -19,6 +20,8 @@ ObjectHolder Assignment::Execute(Closure& closure) {
 //		cout << k << ", ";
 //	}
 //	cout << endl;
+
+	cerr << "Assignment" << endl;
 
 	closure[var_name] = right_value->Execute(closure);
 	return closure[var_name];
@@ -41,6 +44,9 @@ ObjectHolder VariableValue::Execute(Closure& closure) {
 //		cout << k << ", ";
 //	}
 //	cout << endl;
+
+
+	cerr << "VariableValue" << endl;
 
 	Closure temp_closure = closure;
 
@@ -72,6 +78,8 @@ Print::Print(vector<unique_ptr<Statement>> args)
 
 ObjectHolder Print::Execute(Closure& closure) {
 //	output = &cout;
+	cerr << "Print" << endl;
+
 	bool first = true;
 	for (auto& arg : args) {
 		if (!first) {
@@ -102,6 +110,8 @@ MethodCall::MethodCall(
 		args(move(args)) {}
 
 ObjectHolder MethodCall::Execute(Closure& closure) {
+	cerr << "MethodCall" << endl;
+
 	vector<ObjectHolder> actual_args;
 	actual_args.reserve(args.size());
 	for (const auto& arg : args) {
@@ -115,6 +125,9 @@ ObjectHolder MethodCall::Execute(Closure& closure) {
 }
 
 ObjectHolder Stringify::Execute(Closure& closure) {
+	cerr << "Stringify" << endl;
+	was_return = false;
+
 	ObjectHolder object = argument->Execute(closure);
 	ostringstream out;
 	if (object) {
@@ -122,10 +135,15 @@ ObjectHolder Stringify::Execute(Closure& closure) {
 	} else {
 		out << "None";
 	}
+
+	was_return = false;
+
 	return ObjectHolder::Own(Runtime::String(out.str()));
 }
 
 ObjectHolder Add::Execute(Closure& closure) {
+	cerr << "Add" << endl;
+
 	using Runtime::Number;
 	using Runtime::String;
 	using Runtime::ClassInstance;
@@ -134,7 +152,7 @@ ObjectHolder Add::Execute(Closure& closure) {
 	ObjectHolder right = rhs->Execute(closure);
 
 	if (!left || !right) {
-		throw runtime_error("");
+		throw runtime_error("Add None");
 	}
 
 	if (left.TryAs<ClassInstance>()) {
@@ -142,7 +160,7 @@ ObjectHolder Add::Execute(Closure& closure) {
 		if (object->HasMethod("__add__", 1)) {
 			return object->Call("__add__", {right});
 		} else {
-			throw runtime_error("");
+			throw runtime_error("Not found __add__");
 		}
 	}
 
@@ -151,13 +169,13 @@ ObjectHolder Add::Execute(Closure& closure) {
 		if (object->HasMethod("__add__", 1)) {
 			return object->Call("__add__", {left});
 		} else {
-			throw runtime_error("");
+			throw runtime_error("Not found __add__");
 		}
 	}
 
 	if (left.TryAs<Number>()) {
 		if (!right.TryAs<Number>()) {
-			throw runtime_error("");
+			throw runtime_error("Not number");
 		}
 		int l = left.TryAs<Number>()->GetValue();
 		int r = right.TryAs<Number>()->GetValue();
@@ -166,7 +184,7 @@ ObjectHolder Add::Execute(Closure& closure) {
 
 	if (left.TryAs<String>()) {
 		if (!right.TryAs<String>()) {
-			throw runtime_error("");
+			throw runtime_error("Not string");
 		}
 		string l = left.TryAs<String>()->GetValue();
 		string r = right.TryAs<String>()->GetValue();
@@ -174,10 +192,12 @@ ObjectHolder Add::Execute(Closure& closure) {
 		return ObjectHolder::Own(String(l + r));
 	}
 
-	throw runtime_error("");
+	throw runtime_error("Error add operation");
 }
 
 ObjectHolder Sub::Execute(Closure& closure) {
+	cerr << "Sub" << endl;
+
 	using Runtime::Number;
 
 	int left = lhs->Execute(closure).TryAs<Number>()->GetValue();
@@ -186,6 +206,8 @@ ObjectHolder Sub::Execute(Closure& closure) {
 }
 
 ObjectHolder Mult::Execute(Runtime::Closure& closure) {
+	cerr << "Mult" << endl;
+
 	using Runtime::Number;
 
 	int left = lhs->Execute(closure).TryAs<Number>()->GetValue();
@@ -194,6 +216,8 @@ ObjectHolder Mult::Execute(Runtime::Closure& closure) {
 }
 
 ObjectHolder Div::Execute(Runtime::Closure& closure) {
+	cerr << "Div" << endl;
+
 	using Runtime::Number;
 
 	int left = lhs->Execute(closure).TryAs<Number>()->GetValue();
@@ -202,6 +226,8 @@ ObjectHolder Div::Execute(Runtime::Closure& closure) {
 }
 
 ObjectHolder Compound::Execute(Closure& closure) {
+	cerr << "Compound" << endl;
+
 	was_return = false;
 	ObjectHolder holder;
 	for (const auto& stmt : statements) {
@@ -214,6 +240,8 @@ ObjectHolder Compound::Execute(Closure& closure) {
 }
 
 ObjectHolder Return::Execute(Closure& closure) {
+	cerr << "Return" << endl;
+
 	ObjectHolder holder = statement->Execute(closure);
 	was_return = true;
 	return holder;
@@ -225,6 +253,8 @@ ClassDefinition::ClassDefinition(ObjectHolder class_)
 
 ObjectHolder ClassDefinition::Execute(Runtime::Closure& closure) {
 //	cout << class_name << endl;
+	cerr << "ClassDefinition" << endl;
+
 
 	return cls;
 }
@@ -248,6 +278,7 @@ ObjectHolder FieldAssignment::Execute(Runtime::Closure& closure) {
 
 //	closure[field_name] = right_value->Execute(closure);
 //	return closure[field_name];
+	cerr << "FieldAssignment" << endl;
 
 	ObjectHolder holder = object.Execute(closure);
 	auto object_instance = holder.TryAs<Runtime::ClassInstance>();
@@ -267,6 +298,8 @@ IfElse::IfElse(
 }
 
 ObjectHolder IfElse::Execute(Runtime::Closure& closure) {
+	cerr << "IfElse" << endl;
+
 	if (Runtime::IsTrue(condition->Execute(closure))) {
 		return if_body->Execute(closure);
 	} else {
@@ -279,26 +312,32 @@ ObjectHolder IfElse::Execute(Runtime::Closure& closure) {
 }
 
 ObjectHolder Or::Execute(Runtime::Closure& closure) {
+	cerr << "Or" << endl;
+
 	using Runtime::Bool;
 
-	bool left = lhs->Execute(closure).TryAs<Bool>()->GetValue();
-	bool right = rhs->Execute(closure).TryAs<Bool>()->GetValue();
-	return ObjectHolder::Own(Bool(left || right));
+	bool left = Runtime::IsTrue(lhs->Execute(closure));//.TryAs<Bool>()->GetValue();
+	bool right = Runtime::IsTrue(rhs->Execute(closure));//.TryAs<Bool>()->GetValue();
+	return ObjectHolder::Own<Runtime::Bool>(Bool(left || right));
 }
 
 ObjectHolder And::Execute(Runtime::Closure& closure) {
+	cerr << "And" << endl;
+
 	using Runtime::Bool;
 
-	bool left = lhs->Execute(closure).TryAs<Bool>()->GetValue();
-	bool right = rhs->Execute(closure).TryAs<Bool>()->GetValue();
-	return ObjectHolder::Own(Bool(left && right));
+	bool left = Runtime::IsTrue(lhs->Execute(closure));//.TryAs<Bool>()->GetValue();
+	bool right = Runtime::IsTrue(rhs->Execute(closure));//.TryAs<Bool>()->GetValue();
+	return ObjectHolder::Own<Runtime::Bool>(Bool(left && right));
 }
 
 ObjectHolder Not::Execute(Runtime::Closure& closure) {
+	cerr << "Not" << endl;
+
 	using Runtime::Bool;
 
-	bool arg = argument->Execute(closure).TryAs<Bool>()->GetValue();
-	return ObjectHolder::Own(Bool(!arg));
+	bool arg = Runtime::IsTrue(argument->Execute(closure));//.TryAs<Bool>()->GetValue();
+	return ObjectHolder::Own<Runtime::Bool>(Bool(!arg));
 }
 
 Comparison::Comparison(
@@ -310,6 +349,8 @@ Comparison::Comparison(
 }
 
 ObjectHolder Comparison::Execute(Runtime::Closure& closure) {
+	cerr << "Comparison" << endl;
+
 	bool result = comparator(left->Execute(closure), right->Execute(closure));
 	return ObjectHolder::Own<Runtime::Bool>(move(result));
 }
@@ -328,6 +369,8 @@ NewInstance::NewInstance(const Runtime::Class& class_) : NewInstance(class_, {})
 
 ObjectHolder NewInstance::Execute(Runtime::Closure& closure) {
 //	cout << "NewInstance: " << class_.GetName() << endl;
+	cerr << "NewInstance" << endl;
+
 
 	vector<ObjectHolder> actual_args;
 	actual_args.reserve(args.size());
@@ -335,15 +378,36 @@ ObjectHolder NewInstance::Execute(Runtime::Closure& closure) {
 		actual_args.push_back(arg->Execute(closure));
 	}
 
-	Runtime::ClassInstance object(class_);
-	if (object.HasMethod("__init__", actual_args.size())) {
-		object.Call("__init__", actual_args);
+	ObjectHolder holder = ObjectHolder::Own(Runtime::ClassInstance(class_));
+	Runtime::ClassInstance* object = holder.TryAs<Runtime::ClassInstance>();
+
+//	object->Fields()["self"] = holder;
+	if (object->HasMethod("__init__", actual_args.size())) {
+		object->Call("__init__", actual_args);
 	}
+
+//	stack<const Runtime::Method*> inits;
+//
+//	for (const Runtime::Class* current = &class_; current; current = current->GetParent()) {
+//		if (const Runtime::Method* method = current->GetMethod("__init__")) {
+//			inits.push(method);
+//		}
+//	}
+//
+//	while (!inits.empty()) {
+//		inits.top()->Call("__init__", actual_args);
+//		inits.pop();
+//	}
+
+//	Runtime::ClassInstance object(class_);
+//	if (object.HasMethod("__init__", actual_args.size())) {
+//		object.Call("__init__", actual_args);
+//	}
 
 //	cout << "NewInstance ptr: " << &object << endl;
 
-	ObjectHolder holder = ObjectHolder::Own(move(object));
-	holder.TryAs<Runtime::ClassInstance>()->Fields()["self"] = holder;
+//	ObjectHolder holder = ObjectHolder::Own(move(object));
+//	holder.TryAs<Runtime::ClassInstance>()->Fields()["self"] = holder;
 //	cout << "NewInstance ptr: " << holder.Get() << endl;
 
 	return holder;
